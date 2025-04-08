@@ -6,7 +6,7 @@ import numpy as np
 class Node:
     x_pos: float
     temperature: float
-    new_temperature: float
+    new_temperature: float = None
     index: int = field(init=False)
 
     # Class variable to track index count
