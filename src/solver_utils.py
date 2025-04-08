@@ -19,25 +19,36 @@ def construct_global_matrices(nodes: list[Node], elements: list[FiniteElement]):
         for i_local, i_global in enumerate(indices):
             for j_local, j_global in enumerate(indices):
                 global_mass_matrix[i_global, j_global] += local_mass[i_local, j_local]
-                global_stiffness_matrix[i_global, j_global] += local_stiffness[i_local, j_local]
+                global_stiffness_matrix[i_global, j_global] += local_stiffness[
+                    i_local, j_local
+                ]
 
     return global_mass_matrix, global_stiffness_matrix
 
-def construct_a_matrix(global_mass_matrix: np.ndarray, global_stiffness_matrix: np.ndarray, delta_t: float) -> np.ndarray:
+
+def construct_a_matrix(
+    global_mass_matrix: np.ndarray, global_stiffness_matrix: np.ndarray, delta_t: float
+) -> np.ndarray:
     """
     Constructs the A matrix for Backward Euler time stepping:
     A = M / delta_t + K
     """
     return global_mass_matrix / delta_t + global_stiffness_matrix
 
-def construct_b_vector(global_mass_matrix: np.ndarray, nodes: list[Node], delta_t: float) -> np.ndarray:
+
+def construct_b_vector(
+    global_mass_matrix: np.ndarray, nodes: list[Node], delta_t: float
+) -> np.ndarray:
     """
     Constructs the b vector: b = M / delta_t * T^n
     """
     T_n = np.array([node.temperature for node in nodes])
     return global_mass_matrix @ (T_n / delta_t)
 
-def apply_dirichlet_bc(A: np.ndarray, b: np.ndarray, node_index: int, temperature: float):
+
+def apply_dirichlet_bc(
+    A: np.ndarray, b: np.ndarray, node_index: int, temperature: float
+):
     """
     Applies a Dirichlet BC (fixed temperature) at a node by modifying A and b in-place.
 
@@ -50,6 +61,7 @@ def apply_dirichlet_bc(A: np.ndarray, b: np.ndarray, node_index: int, temperatur
     A[node_index, :] = 0
     A[node_index, node_index] = 1
     b[node_index] = temperature
+
 
 def apply_neumann_bc(b: np.ndarray, node_index: int, flux: float, area: float = 1.0):
     """

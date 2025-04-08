@@ -16,13 +16,14 @@ class Node:
         self.index = Node._counter
         Node._counter += 1
 
+
 @dataclass
 class FiniteElement:
-    thermal_conductivity : float = 1
-    density : float = 1
-    specific_heat : float = 1
-    cross_sectional_area : float = 1
-    nodes : list[Node] = field(default_factory=list)
+    thermal_conductivity: float = 1
+    density: float = 1
+    specific_heat: float = 1
+    cross_sectional_area: float = 1
+    nodes: list[Node] = field(default_factory=list)
     index: int = field(init=False)
 
     # Class variable to track index count
@@ -38,15 +39,9 @@ class FiniteElement:
     def mass_matrix(self):
         L = self.length()
         m = (self.density * self.specific_heat * self.cross_sectional_area * L) / 6
-        return np.array([
-            [2 * m, 1 * m],
-            [1 * m, 2 * m]
-        ])
+        return np.array([[2 * m, 1 * m], [1 * m, 2 * m]])
 
     def stiffness_matrix(self):
         L = self.length()
         k = (self.thermal_conductivity * self.cross_sectional_area) / L
-        return np.array([
-            [1 * k, -1 * k],
-            [-1 * k, 1 * k]
-        ])
+        return np.array([[1 * k, -1 * k], [-1 * k, 1 * k]])
