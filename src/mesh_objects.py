@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import numpy as np
 
-
 @dataclass
 class Node:
     x_pos: float
@@ -17,14 +16,12 @@ class Node:
         self.index = Node._counter
         Node._counter += 1
 
-
 @dataclass
 class FiniteElement(ABC):
     thermal_conductivity: float = 1
     density: float = 1
     specific_heat: float = 1
-    # cross_sectional_area: float = 1
-    nodes: list[Node] = field(default_factory=list)
+    nodes: list = field(default_factory=list)
     index: int = field(init=False)
 
     _counter: int = 0
@@ -33,10 +30,15 @@ class FiniteElement(ABC):
         self.index = FiniteElement._counter
         FiniteElement._counter += 1
 
+        self._ensure_positive_jacobian()
+
     def material_matrix(self):
-        """Return 2D isotropic thermal conductivity matrix."""
-        k = self.thermal_conductivity
-        return k * np.eye(2)
+        return self.thermal_conductivity * np.eye(2)
+
+    @abstractmethod
+    def _ensure_positive_jacobian(self):
+        """Check and fix node ordering so that Jacobian is positive."""
+        pass
 
     @abstractmethod
     def shape_functions(self, x_local: float, y_local: float):
@@ -59,8 +61,22 @@ class FiniteElement(ABC):
         pass
 
 
+
 @dataclass
 class TriElement(FiniteElement):
+
+    def _ensure_positive_jacobian(self):
+
+        # Re-orders nodes counter-clockwise for positive Jacobian
+        x = [n.x_pos for n in self.nodes]
+        y = [n.y_pos for n in self.nodes]
+
+        area = 0.5 * ((x[1] - x[0]) * (y[2] - y[0]) -
+                      (x[2] - x[0]) * (y[1] - y[0]))
+
+        if area < 0:
+            self.nodes[1], self.nodes[2] = self.nodes[2], self.nodes[1]
+
     def shape_functions(self, x_local, y_local):
         return np.array([1 - x_local - y_local, x_local, y_local])
 
@@ -106,6 +122,20 @@ class TriElement(FiniteElement):
 
 @dataclass
 class QuadElement(FiniteElement):
+
+    def _ensure_positive_jacobian(self):
+        x = [n.x_pos for n in self.nodes]
+        y = [n.y_pos for n in self.nodes]
+
+        def tri_area(i, j, k):
+            return 0.5 * ((x[j] - x[i]) * (y[k] - y[i]) - (x[k] - x[i]) * (y[j] - y[i]))
+
+        area1 = tri_area(0, 1, 2)
+        area2 = tri_area(0, 2, 3)
+
+        if area1 + area2 < 0:
+            self.nodes.reverse()
+
     def shape_functions(self, x_local, y_local):
         return np.array(
             [
